@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>さんかくけい・しかくけい なかまわけ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF7EC;
+    --paper-line:#E7DEC6;
+    --ink:#2C3A4E;
+    --ink-soft:#5B6B7E;
+    --gold:#DFA23A;
+    --gold-soft:#FBEBCD;
+    --teal:#3C8C7C;
+    --teal-soft:#DCEEE9;
+    --plum:#8266A6;
+    --plum-soft:#EAE1F2;
+    --card:#FFFDF7;
+    --shadow: 0 6px 14px rgba(44,58,78,.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+    color:var(--ink);
+    background:
+      repeating-linear-gradient(0deg, transparent 0 39px, var(--paper-line) 39px 40px),
+      repeating-linear-gradient(90deg, transparent 0 39px, var(--paper-line) 39px 40px),
+      var(--paper);
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+    padding-bottom:40px;
+  }
+
+  /* ---------- Header ---------- */
+  header{padding:22px 18px 14px;text-align:center;}
+  .eyebrow{
+    display:inline-block;font-size:13px;font-weight:700;color:var(--ink-soft);
+    background:#fff;border:2px solid var(--paper-line);border-radius:999px;
+    padding:3px 16px;margin-bottom:8px;
+  }
+  h1{margin:0;font-size:clamp(22px, 4.5vw, 32px);font-weight:900;letter-spacing:.02em;}
+  h1 .tri{color:var(--gold);}
+  h1 .quad{color:var(--teal);}
+  p.sub{margin:8px 0 0;font-size:15px;color:var(--ink-soft);font-weight:500;}
+
+  .toolbar{
+    max-width:1000px;margin:14px auto 0;padding:0 18px;
+    display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  }
+  .btn{
+    font-family:inherit;font-weight:700;font-size:14px;color:var(--ink);
+    background:#fff;border:2px solid var(--paper-line);border-radius:14px;
+    padding:9px 16px;cursor:pointer;box-shadow:var(--shadow);
+    display:inline-flex;align-items:center;gap:6px;transition:transform .15s ease;
+  }
+  .btn:active{transform:scale(.95);}
+  .btn.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  /* ---------- Tray ---------- */
+  .tray-wrap{max-width:1000px;margin:18px auto 0;padding:0 18px;}
+  .tray-label{font-size:13px;font-weight:700;color:var(--ink-soft);margin:0 0 8px 4px;}
+  .tray{
+    background:rgba(255,255,255,.55);border:2px dashed var(--paper-line);
+    border-radius:22px;padding:16px;min-height:150px;
+    display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;justify-content:center;
+  }
+
+  .shape-card{
+    position:relative;width:112px;height:112px;background:var(--card);
+    border-radius:16px;box-shadow:var(--shadow);touch-action:none;cursor:grab;
+    display:flex;align-items:center;justify-content:center;user-select:none;
+    transition:box-shadow .15s ease;
+  }
+  .shape-card.dragging{cursor:grabbing;z-index:50;box-shadow:0 16px 26px rgba(44,58,78,.28);}
+  .shape-card svg{width:82%;height:82%;pointer-events:none;overflow:visible;}
+  .shape-card polygon,.shape-card path{
+    fill:none;stroke:var(--ink);stroke-width:6;
+    stroke-linejoin:round;stroke-linecap:round;
+  }
+  .shape-card.placed{width:96px;height:96px;}
+
+  .zone[data-cat="triangle"] .shape-card.placed{background:var(--gold-soft);}
+  .zone[data-cat="triangle"] .shape-card.placed polygon,
+  .zone[data-cat="triangle"] .shape-card.placed path{stroke:var(--gold);}
+  .zone[data-cat="quad"] .shape-card.placed{background:var(--teal-soft);}
+  .zone[data-cat="quad"] .shape-card.placed polygon,
+  .zone[data-cat="quad"] .shape-card.placed path{stroke:var(--teal);}
+  .zone[data-cat="other"] .shape-card.placed{background:var(--plum-soft);}
+  .zone[data-cat="other"] .shape-card.placed polygon,
+  .zone[data-cat="other"] .shape-card.placed path{stroke:var(--plum);}
+
+  /* ---------- Shape label tag (ア・イ・ウ…) ---------- */
+  .tag circle{ fill:#fff; stroke:var(--ink); stroke-width:2.5; }
+  .tag text{
+    fill:var(--ink); stroke:none; text-anchor:middle;
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
+    font-weight:700; font-size:19px;
+  }
+
+  @keyframes pop{
+    0%{transform:scale(1);}
+    45%{transform:scale(1.18);}
+    100%{transform:scale(1);}
+  }
+  .shape-card.pop{animation:pop .38s ease;}
+
+  /* ---------- Zones ---------- */
+  .zones{
+    max-width:1000px;margin:22px auto 0;padding:0 18px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  }
+  @media (max-width:720px){.zones{grid-template-columns:1fr;}}
+  .zone{
+    border-radius:22px;padding:16px 14px 18px;background:#fff;
+    border:3px solid var(--paper-line);box-shadow:var(--shadow);
+  }
+  .zone-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .zone-icon{width:34px;height:34px;flex:none;}
+  .zone-icon svg{width:100%;height:100%;overflow:visible;}
+  .zone-title{font-weight:900;font-size:17px;}
+  .zone[data-cat="triangle"]{border-color:var(--gold);}
+  .zone[data-cat="triangle"] .zone-title{color:var(--gold);}
+  .zone[data-cat="quad"]{border-color:var(--teal);}
+  .zone[data-cat="quad"] .zone-title{color:var(--teal);}
+  .zone[data-cat="other"]{border-color:var(--plum);}
+  .zone[data-cat="other"] .zone-title{color:var(--plum);}
+  .zone.over{transform:scale(1.02);}
+
+  .zone-slots{
+    display:flex;gap:10px;flex-wrap:wrap;min-height:104px;
+    align-items:flex-start;justify-content:flex-start;
+  }
+
+  /* ---------- Footer status ---------- */
+  .status{max-width:1000px;margin:20px auto 0;padding:0 18px;text-align:center;}
+  .status p{
+    display:inline-block;font-weight:700;font-size:14.5px;color:var(--ink-soft);
+    background:#fff;border:2px solid var(--paper-line);border-radius:999px;padding:8px 20px;
+  }
+
+  /* ---------- Zoom modal (no labels, just a closer look) ---------- */
+  .backdrop{
+    position:fixed;inset:0;background:rgba(44,58,78,.45);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:200;
+  }
+  .backdrop.show{display:flex;}
+  .modal{
+    background:var(--card);border-radius:26px;max-width:340px;width:100%;
+    padding:30px 24px 26px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);
+    position:relative;
+  }
+  .modal-close{
+    position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;
+    border:none;background:var(--paper);color:var(--ink-soft);font-size:18px;
+    font-weight:700;cursor:pointer;
+  }
+  .modal-stage{width:230px;height:230px;margin:0 auto;}
+  .modal-stage svg{width:100%;height:100%;overflow:visible;}
+  .modal-stage polygon,.modal-stage path{
+    fill:none;stroke:var(--ink);stroke-width:5;
+    stroke-linejoin:round;stroke-linecap:round;
+  }
+
+  /* ---------- Discussion prompt overlay ---------- */
+  .win{
+    position:fixed;inset:0;background:rgba(44,58,78,.55);display:none;
+    align-items:center;justify-content:center;z-index:300;padding:20px;
+  }
+  .win.show{display:flex;}
+  .win-card{
+    background:var(--card);border-radius:28px;padding:36px 30px;text-align:center;
+    max-width:360px;box-shadow:0 24px 60px rgba(0,0,0,.35);
+  }
+  .win-emoji{font-size:48px;margin-bottom:6px;}
+  .win-card h2{margin:0 0 10px;font-size:22px;font-weight:900;}
+  .win-card p{margin:0 0 20px;color:var(--ink-soft);font-weight:600;font-size:15px;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="eyebrow">2年生 さんすう</span>
+  <h1><span class="tri">さんかくけい</span>・<span class="quad">しかくけい</span> なかまわけ</h1>
+  <p class="sub">じぶんなら どう わける？かたちを つまんで、3つの はこに 入れてみよう</p>
+</header>
+
+<div class="toolbar">
+  <button class="btn" id="resetBtn">↺ もういちど</button>
+</div>
+
+<div class="tray-wrap">
+  <p class="tray-label">かたちの トレイ（つまんで はこに いれてね／タップで 大きく 見られるよ）</p>
+  <div class="tray" id="tray"></div>
+</div>
+
+<div class="zones" id="zones">
+  <div class="zone" data-cat="triangle">
+    <div class="zone-head">
+      <span class="zone-icon"><svg viewBox="0 0 40 40"><polygon points="20,6 34,32 6,32" fill="none" stroke="#DFA23A" stroke-width="4" stroke-linejoin="round"/></svg></span>
+      <span class="zone-title">三角形</span>
+    </div>
+    <div class="zone-slots" data-slots-for="triangle"></div>
+  </div>
+
+  <div class="zone" data-cat="quad">
+    <div class="zone-head">
+      <span class="zone-icon"><svg viewBox="0 0 40 40"><polygon points="8,8 32,8 32,32 8,32" fill="none" stroke="#3C8C7C" stroke-width="4" stroke-linejoin="round"/></svg></span>
+      <span class="zone-title">四角形</span>
+    </div>
+    <div class="zone-slots" data-slots-for="quad"></div>
+  </div>
+
+  <div class="zone" data-cat="other">
+    <div class="zone-head">
+      <span class="zone-icon"><svg viewBox="0 0 40 40"><path d="M8,10 L32,10 L28,30 Q20,36 12,30 Z" fill="none" stroke="#8266A6" stroke-width="4" stroke-linejoin="round"/></svg></span>
+      <span class="zone-title">どちらでもない</span>
+    </div>
+    <div class="zone-slots" data-slots-for="other"></div>
+  </div>
+</div>
+
+<div class="status">
+  <p id="statusText">のこり 9こ</p>
+</div>
+
+<div class="backdrop" id="backdrop">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal-stage" id="modalStage"></div>
+  </div>
+</div>
+
+<div class="win" id="win">
+  <div class="win-card">
+    <div class="win-emoji">✏️</div>
+    <h2>ぜんぶ わけられたね</h2>
+    <p>どうして その はこに 入れたのか、お友だちや 先生と はなしあってみよう。</p>
+    <button class="btn on" id="winClose">とじる</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* 添付の学習プリントの図形（ア〜ケ）。ラベルは図形の中に表示する。 */
+  const SHAPES = [
+    /* ア：台形（しかくけい） */
+    {id:'a',  label:'ア', type:'polygon', points:[[46,20],[120,26],[116,122],[18,124]], lx:72, ly:74},
+    /* イ：辺がへこんだ三角のような形（どちらでもない） */
+    {id:'i',  label:'イ', type:'path', d:'M70,14 Q55,72 16,120 Q70,106 124,122 Q86,74 70,14 Z', lx:70, ly:94},
+    /* ウ：辺がへこんだ四角のような形（どちらでもない） */
+    {id:'u',  label:'ウ', type:'path', d:'M20,20 Q70,38 120,20 Q102,70 120,120 Q70,102 20,120 Q38,70 20,20 Z', lx:70, ly:70},
+    /* エ：頂点が丸まっている三角のような形（どちらでもない） */
+    {id:'e',  label:'エ', type:'path', d:'M78.4,27.6 L117.6,110.4 Q124,124 109,124 L31,124 Q16,124 22.8,110.6 L65.2,27.4 Q72,14 78.4,27.6 Z', lx:70, ly:92},
+    /* オ：右上のかど1か所だけ辺が途切れている四角のような形（どちらでもない） */
+    {id:'o',  label:'オ', type:'path', d:'M116,36 L118,116 L20,114 L22,22 L100,20', lx:66, ly:70},
+    /* カ：右上のかど1か所だけ辺が途切れている三角のような形（どちらでもない） */
+    {id:'ka', label:'カ', type:'path', d:'M116,35 L78,124 L18,26 L106,21', lx:68, ly:58},
+    /* キ：大きな三角形 */
+    {id:'ki', label:'キ', type:'polygon', points:[[126,20],[14,86],[96,128]], lx:78, ly:84},
+    /* ク：横に長い四角形 */
+    {id:'ku', label:'ク', type:'polygon', points:[[14,52],[128,42],[126,96],[16,104]], lx:70, ly:74},
+    /* ケ：細長い三角形 */
+    {id:'ke', label:'ケ', type:'polygon', points:[[14,116],[128,40],[90,114]], lx:80, ly:92, r:14}
+  ];
+
+  const tray = document.getElementById('tray');
+  const zonesEl = document.getElementById('zones');
+  const statusText = document.getElementById('statusText');
+  const resetBtn = document.getElementById('resetBtn');
+  const backdrop = document.getElementById('backdrop');
+  const modalClose = document.getElementById('modalClose');
+  const modalStage = document.getElementById('modalStage');
+  const winEl = document.getElementById('win');
+  const winClose = document.getElementById('winClose');
+
+  const TOTAL = SHAPES.length;
+  let winShown = false;
+
+  function shuffled(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function shapeInnerSVG(shape){
+    let inner;
+    if(shape.type === 'path'){
+      inner = '<path d="'+shape.d+'"/>';
+    } else {
+      const pts = shape.points.map(p=>p.join(',')).join(' ');
+      inner = '<polygon points="'+pts+'"/>';
+    }
+    const r = shape.r || 15;
+    const tag = '<g class="tag">'
+      + '<circle cx="'+shape.lx+'" cy="'+shape.ly+'" r="'+r+'"/>'
+      + '<text x="'+shape.lx+'" y="'+shape.ly+'" dy="0.35em">'+shape.label+'</text>'
+      + '</g>';
+    return '<svg viewBox="0 0 140 140">'+inner+tag+'</svg>';
+  }
+
+  function buildCard(shape){
+    const card = document.createElement('div');
+    card.className = 'shape-card';
+    card.dataset.id = shape.id;
+    card.innerHTML = shapeInnerSVG(shape);
+    attachDrag(card, shape);
+    return card;
+  }
+
+  function renderAll(){
+    winShown = false;
+    winEl.classList.remove('show');
+    tray.innerHTML = '';
+    shuffled(SHAPES).forEach(shape => tray.appendChild(buildCard(shape)));
+    document.querySelectorAll('.zone-slots').forEach(el => el.innerHTML = '');
+    updateStatus();
+  }
+
+  function updateStatus(){
+    const remaining = tray.children.length;
+    statusText.textContent = remaining > 0
+      ? 'のこり ' + remaining + 'こ'
+      : 'ぜんぶ はこに 入れたね';
+    if(remaining === 0 && !winShown){
+      winShown = true;
+      setTimeout(()=>winEl.classList.add('show'), 350);
+    }
+  }
+
+  function pointInRect(x,y,rect,pad){
+    pad = pad || 0;
+    return x >= rect.left-pad && x <= rect.right+pad && y >= rect.top-pad && y <= rect.bottom+pad;
+  }
+
+  function findDropTarget(cx,cy){
+    let target = null;
+    zonesEl.querySelectorAll('.zone').forEach(z=>{
+      if(pointInRect(cx,cy,z.getBoundingClientRect(),6)) target = z.querySelector('.zone-slots');
+    });
+    if(!target && pointInRect(cx,cy,tray.getBoundingClientRect(),6)) target = tray;
+    return target;
+  }
+
+  function attachDrag(card, shape){
+    let startX=0,startY=0,dx=0,dy=0,dragging=false,moved=false;
+
+    card.addEventListener('pointerdown', (e)=>{
+      startX = e.clientX; startY = e.clientY;
+      dx=0; dy=0; dragging=true; moved=false;
+      card.setPointerCapture(e.pointerId);
+    });
+
+    card.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      dx = e.clientX - startX;
+      dy = e.clientY - startY;
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6){
+        if(!moved){ moved = true; card.classList.add('dragging'); }
+      }
+      if(moved){
+        card.style.transform = 'translate('+dx+'px,'+dy+'px)';
+        highlightZones(card);
+      }
+    });
+
+    function endDrag(){
+      if(!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+      clearZoneHighlights();
+
+      if(!moved){
+        openZoom(shape);
+        return;
+      }
+
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+      const target = findDropTarget(cx,cy);
+
+      card.style.transition = 'transform .22s ease';
+      card.style.transform = 'translate(0px,0px)';
+      setTimeout(()=>{
+        card.style.transition = '';
+        if(target && target !== card.parentElement){
+          const isZone = target !== tray;
+          card.classList.toggle('placed', isZone);
+          target.appendChild(card);
+          card.classList.add('pop');
+          setTimeout(()=>card.classList.remove('pop'), 400);
+          updateStatus();
+        }
+      }, 210);
+    }
+
+    card.addEventListener('pointerup', endDrag);
+    card.addEventListener('pointercancel', endDrag);
+  }
+
+  function highlightZones(card){
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    zonesEl.querySelectorAll('.zone').forEach(z=>{
+      z.classList.toggle('over', pointInRect(cx,cy,z.getBoundingClientRect(),6));
+    });
+  }
+  function clearZoneHighlights(){
+    zonesEl.querySelectorAll('.zone').forEach(z=>z.classList.remove('over'));
+  }
+
+  function openZoom(shape){
+    modalStage.innerHTML = shapeInnerSVG(shape);
+    backdrop.classList.add('show');
+  }
+
+  modalClose.addEventListener('click', ()=>backdrop.classList.remove('show'));
+  backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) backdrop.classList.remove('show'); });
+
+  resetBtn.addEventListener('click', renderAll);
+  winClose.addEventListener('click', ()=>winEl.classList.remove('show'));
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
