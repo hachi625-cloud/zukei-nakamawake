@@ -282,15 +282,6 @@
   const TOTAL = SHAPES.length;
   let winShown = false;
 
-  function shuffled(arr){
-    const a = arr.slice();
-    for(let i=a.length-1;i>0;i--){
-      const j = Math.floor(Math.random()*(i+1));
-      [a[i],a[j]] = [a[j],a[i]];
-    }
-    return a;
-  }
-
   function shapeInnerSVG(shape){
     let inner;
     if(shape.type === 'path'){
@@ -320,7 +311,8 @@
     winShown = false;
     winEl.classList.remove('show');
     tray.innerHTML = '';
-    shuffled(SHAPES).forEach(shape => tray.appendChild(buildCard(shape)));
+    /* アイウエオ順（SHAPES の定義順）でならべる */
+    SHAPES.forEach(shape => tray.appendChild(buildCard(shape)));
     document.querySelectorAll('.zone-slots').forEach(el => el.innerHTML = '');
     updateStatus();
   }
