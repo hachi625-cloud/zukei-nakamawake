@@ -282,6 +282,39 @@
   const TOTAL = SHAPES.length;
   let winShown = false;
 
+  /* ---------- 仲間分けの状態をブラウザに保存する ----------
+     ページを再読み込みしても、「↺ もういちど」を押すまでは
+     どのはこに入れたかを覚えておく。 */
+  const STORAGE_KEY = 'zukei-nakamawake-state-v1';
+  const LOCATIONS = ['tray', 'triangle', 'quad', 'other'];
+
+  function saveState(){
+    const data = {};
+    SHAPES.forEach(shape=>{
+      const card = document.querySelector('.shape-card[data-id="'+shape.id+'"]');
+      const parent = card && card.parentElement;
+      data[shape.id] = (parent && parent.dataset.slotsFor) ? parent.dataset.slotsFor : 'tray';
+    });
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){ /* 保存できなくても続行 */ }
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      const data = JSON.parse(raw);
+      if(!data || typeof data !== 'object') return null;
+      for(const shape of SHAPES){
+        if(!LOCATIONS.includes(data[shape.id])) return null;
+      }
+      return data;
+    }catch(e){ return null; }
+  }
+
+  function clearState(){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){ /* なければ何もしない */ }
+  }
+
   function shapeInnerSVG(shape){
     let inner;
     if(shape.type === 'path'){
@@ -307,13 +340,27 @@
     return card;
   }
 
-  function renderAll(){
+  function renderAll(locations){
     winShown = false;
     winEl.classList.remove('show');
     tray.innerHTML = '';
-    /* アイウエオ順（SHAPES の定義順）でならべる */
-    SHAPES.forEach(shape => tray.appendChild(buildCard(shape)));
     document.querySelectorAll('.zone-slots').forEach(el => el.innerHTML = '');
+
+    /* アイウエオ順（SHAPES の定義順）でならべつつ、保存された配置が
+       あればそのはこに、なければトレイに置く。 */
+    SHAPES.forEach(shape=>{
+      const card = buildCard(shape);
+      const loc = locations && locations[shape.id];
+      const slot = loc && loc !== 'tray'
+        ? zonesEl.querySelector('.zone-slots[data-slots-for="'+loc+'"]')
+        : null;
+      if(slot){
+        card.classList.add('placed');
+        slot.appendChild(card);
+      } else {
+        tray.appendChild(card);
+      }
+    });
     updateStatus();
   }
 
@@ -391,6 +438,7 @@
           card.classList.add('pop');
           setTimeout(()=>card.classList.remove('pop'), 400);
           updateStatus();
+          saveState();
         }
       }, 210);
     }
@@ -419,10 +467,15 @@
   modalClose.addEventListener('click', ()=>backdrop.classList.remove('show'));
   backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) backdrop.classList.remove('show'); });
 
-  resetBtn.addEventListener('click', renderAll);
+  resetBtn.addEventListener('click', ()=>{
+    clearState();
+    renderAll(null);
+  });
   winClose.addEventListener('click', ()=>winEl.classList.remove('show'));
 
-  renderAll();
+  /* ページを開いたときは、保存された仲間分けがあれば復元する。
+     なければ最初と同じく全部トレイに並べる。 */
+  renderAll(loadState());
 })();
 </script>
 </body>
